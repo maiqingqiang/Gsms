@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -39,7 +40,20 @@ type Option func(req *http.Request)
 
 // Request http request.
 func (r *Request) Request(method, url string, data interface{}, options ...Option) ([]byte, error) {
+	resp, err := r.do(method, url, data, options...)
+	if err != nil {
+		return nil, err
+	}
 
+	return r.readBody(resp)
+}
+
+func (r *Request) readBody(resp *http.Response) ([]byte, error) {
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (r *Request) do(method string, url string, data interface{}, options ...Option) (*http.Response, error) {
 	if !(strings.HasPrefix(url, "http") || strings.HasPrefix(url, "https")) {
 		url = r.BaseUrl + url
 	}
@@ -95,7 +109,7 @@ func (r *Request) Request(method, url string, data interface{}, options ...Optio
 				default:
 					body, err = json.Marshal(data)
 					if err != nil {
-						return nil, err
+						return nil, ErrRequestDataTypeError
 					}
 				}
 
@@ -126,15 +140,7 @@ func (r *Request) Request(method, url string, data interface{}, options ...Optio
 	if err != nil {
 		return nil, err
 	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
+	return resp, nil
 }
 
 // Get request
@@ -144,13 +150,32 @@ func (r *Request) Get(url string, data interface{}) ([]byte, error) {
 
 // GetWithUnmarshal get request and unmarshal response.
 func (r *Request) GetWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
-	body, err := r.Get(url, data)
-	err = json.Unmarshal(body, v)
+	resp, err := r.do(http.MethodGet, url, data)
+
+	body, err := r.readBody(resp)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("json unmarshal error: %s body: %s", err.Error(), string(body)))
+		return "", err
 	}
 
-	return string(body), nil
+	bodyStr := string(body)
+
+	if strings.Contains(resp.Header.Get("Content-Type"), "json") || strings.Contains(resp.Header.Get("Content-Type"), "javascript") {
+		err = json.Unmarshal(body, v)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("json unmarshal error: %s, body: %s", err, bodyStr))
+		}
+	} else if strings.Contains(resp.Header.Get("Content-Type"), "xml") {
+		err = xml.Unmarshal(body, v)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("xml unmarshal error: %s, body: %s", err, bodyStr))
+		}
+	} else {
+		if resp.StatusCode != http.StatusOK {
+			return "", errors.New(fmt.Sprintf("not support unmarshal content type: %s, status code: %d, body: %s", resp.Header.Get("Content-Type"), resp.StatusCode, bodyStr))
+		}
+	}
+
+	return bodyStr, nil
 }
 
 // Post request
@@ -160,11 +185,39 @@ func (r *Request) Post(url string, data interface{}) ([]byte, error) {
 
 // PostWithUnmarshal post request and unmarshal response.
 func (r *Request) PostWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
-	body, err := r.Post(url, data)
-	err = json.Unmarshal(body, v)
+	resp, err := r.do(http.MethodPost, url, data)
+
+	body, err := r.readBody(resp)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("json unmarshal error: %s body: %s", err.Error(), string(body)))
+		return "", err
+	}
+
+	err = r.unmarshal(resp, body, v)
+	if err != nil {
+		return "", err
 	}
 
 	return string(body), nil
+}
+
+// unmarshal response.
+func (r *Request) unmarshal(resp *http.Response, body []byte, v interface{}) error {
+	bodyStr := string(body)
+
+	if strings.Contains(resp.Header.Get("Content-Type"), "json") || strings.Contains(resp.Header.Get("Content-Type"), "javascript") {
+		err := json.Unmarshal(body, v)
+		if err != nil {
+			return errors.New(fmt.Sprintf("json unmarshal error: %s, body: %s", err, bodyStr))
+		}
+	} else if strings.Contains(resp.Header.Get("Content-Type"), "xml") {
+		err := xml.Unmarshal(body, v)
+		if err != nil {
+			return errors.New(fmt.Sprintf("xml unmarshal error: %s, body: %s", err, bodyStr))
+		}
+	} else {
+		if resp.StatusCode != http.StatusOK {
+			return errors.New(fmt.Sprintf("not support unmarshal content type: %s, status code: %d, body: %s", resp.Header.Get("Content-Type"), resp.StatusCode, bodyStr))
+		}
+	}
+	return nil
 }
