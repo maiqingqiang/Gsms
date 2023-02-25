@@ -197,7 +197,7 @@ client.Send(18888888888, &OrderPaidMessage{OrderNo: "1234"})
 [issues-shield]: https://img.shields.io/github/issues/maiqingqiang/Gsms.svg
 [issues-url]: https://github.com/maiqingqiang/Gsms/issues
 [license-shield]: https://img.shields.io/github/license/maiqingqiang/Gsms.svg
-[license-url]: https://github.com/maiqingqiang/Gsms/blob/master/LICENSE.txt
+[license-url]: https://github.com/maiqingqiang/Gsms/blob/master/LICENSE
 [go-report-card]: https://goreportcard.com/badge/github.com/maiqingqiang/Gsms
 [go-report-card-url]: https://goreportcard.com/report/github.com/maiqingqiang/Gsms
 [go.dev-reference]: https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white
