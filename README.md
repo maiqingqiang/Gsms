@@ -1,4 +1,18 @@
-<h1 align="center">Gsms</h1>
+<a name="readme-top"></a>
+
+<!-- PROJECT SHIELDS -->
+
+[![go report card][go-report-card]][go-report-card-url]
+[![Go.Dev reference][go.dev-reference]][go.dev-reference-url]
+[![Go package][go-pacakge]][go-pacakge-url]
+[![MIT License][license-shield]][license-url]
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+
+
+<h1 align="center">Gsms :calling: </h1>
 
 <p align="center">:calling: 一款满足你的多种发送需求的短信发送组件，此项目参考 <a href="https://github.com/overtrue/easy-sms">easy-sms</a> 实现的 Go 版本 </p>
 
@@ -163,11 +177,30 @@ client.Send(18888888888, &OrderPaidMessage{OrderNo: "1234"})
 
 ```
 
+## 版权说明
+
+该项目签署了 GNU 授权许可，详情请参阅 [LICENSE](LICENSE)
+
 ## 鸣谢
 
 - [安正超](https://github.com/overtrue)
 - [easy-sms](https://github.com/overtrue/easy-sms)
 
-## License
+<!-- MARKDOWN LINKS & IMAGES -->
 
-MIT
+[contributors-shield]: https://img.shields.io/github/contributors/maiqingqiang/Gsms.svg
+[contributors-url]: https://github.com/maiqingqiang/Gsms/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/maiqingqiang/Gsms.svg
+[forks-url]: https://github.com/maiqingqiang/Gsms/network/members
+[stars-shield]: https://img.shields.io/github/stars/maiqingqiang/Gsms.svg
+[stars-url]: https://github.com/maiqingqiang/Gsms/stargazers
+[issues-shield]: https://img.shields.io/github/issues/maiqingqiang/Gsms.svg
+[issues-url]: https://github.com/maiqingqiang/Gsms/issues
+[license-shield]: https://img.shields.io/github/license/maiqingqiang/Gsms.svg
+[license-url]: https://github.com/maiqingqiang/Gsms/blob/master/LICENSE.txt
+[go-report-card]: https://goreportcard.com/badge/github.com/maiqingqiang/Gsms
+[go-report-card-url]: https://goreportcard.com/report/github.com/maiqingqiang/Gsms
+[go.dev-reference]: https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white
+[go.dev-reference-url]: https://pkg.go.dev/gorm.io/gorm?tab=doc
+[go-pacakge]: https://github.com/maiqingqiang/Gsms/actions/workflows/test.yml/badge.svg?branch=main
+[go-pacakge-url]: https://github.com/maiqingqiang/Gsms/actions/workflows/test.yml
