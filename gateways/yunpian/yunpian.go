@@ -1,15 +1,11 @@
 package yunpian
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/maiqingqiang/gsms/core"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 var _ core.GatewayInterface = (*Gateway)(nil)
@@ -20,7 +16,7 @@ type Gateway struct {
 }
 
 // Send message.
-func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface) (string, error) {
+func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, request core.RequestInterface) (string, error) {
 
 	p := url.Values{}
 	method := MethodSingleSend
@@ -56,40 +52,14 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 
 	endpoint := buildEndpoint(ProductSms, ResourceSms, method)
 
-	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(p.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-
 	response := &Response{}
-
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return "", err
-	}
+	body, err := request.PostWithUnmarshal(endpoint, p, response)
 
 	if !response.isSuccessful() {
 		return "", errors.New(fmt.Sprintf("send failed code:%d msg:%s detail:%s", response.Code, response.Msg, response.Detail))
 	}
 
-	return string(body), nil
+	return body, nil
 }
 
 // buildEndpoint Build endpoint url.

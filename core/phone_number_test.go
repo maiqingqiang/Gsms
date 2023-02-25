@@ -22,7 +22,7 @@ func TestPhoneNumber(t *testing.T) {
 
 func TestPhoneNumber_IDDCode(t *testing.T) {
 	type fields struct {
-		number  int64
+		number  int
 		iddCode string
 	}
 	tests := []struct {

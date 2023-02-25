@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/maiqingqiang/gsms/core"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,12 +27,8 @@ func (g *Gateway) Name() string {
 	return NAME
 }
 
-func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface) (string, error) {
-	req, err := http.NewRequest(http.MethodGet, EndpointUrl, nil)
-	if err != nil {
-		return "", err
-	}
-	query := req.URL.Query()
+func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, request core.RequestInterface) (string, error) {
+	query := url.Values{}
 
 	query.Add("RegionId", EndpointRegionId)
 	query.Add("AccessKeyId", g.AccessKeyId)
@@ -65,27 +60,9 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 
 	query.Add("Signature", generateSign(http.MethodGet, g.AccessKeySecret, query))
 
-	req.URL.RawQuery = query.Encode()
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-
 	response := &Response{}
 
-	err = json.Unmarshal(body, &response)
+	body, err := request.GetWithUnmarshal(EndpointUrl, query, response)
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +71,7 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 		return "", errors.New(fmt.Sprintf("send failed code:%s msg:%s", response.Code, response.Message))
 	}
 
-	return string(body), nil
+	return body, nil
 }
 
 // generateSign Generate sign.

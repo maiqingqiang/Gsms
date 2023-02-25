@@ -2,6 +2,8 @@ package gsms
 
 import (
 	"github.com/maiqingqiang/gsms/core"
+	"github.com/maiqingqiang/gsms/strategies"
+	"strconv"
 	"time"
 )
 
@@ -12,25 +14,7 @@ type Gsms struct {
 	Gateways        map[string]core.GatewayInterface
 }
 
-func WithTimeout(timeout time.Duration) func(*Gsms) {
-	return func(gsms *Gsms) {
-		gsms.Timeout = timeout
-	}
-}
-
-func WithDefaultGateway(gateways []string) func(*Gsms) {
-	return func(gsms *Gsms) {
-		gsms.DefaultGateways = gateways
-	}
-}
-
-func WithStrategy(strategy core.StrategyInterface) func(*Gsms) {
-	return func(gsms *Gsms) {
-		gsms.Strategy = strategy
-	}
-}
-
-func New(gateways []core.GatewayInterface, options ...func(*Gsms)) *Gsms {
+func New(gateways []core.GatewayInterface, options ...Option) *Gsms {
 	gatewaysMap := make(map[string]core.GatewayInterface, len(gateways))
 
 	for _, gateway := range gateways {
@@ -39,6 +23,7 @@ func New(gateways []core.GatewayInterface, options ...func(*Gsms)) *Gsms {
 
 	gsms := &Gsms{
 		Gateways: gatewaysMap,
+		Strategy: &strategies.OrderStrategy{},
 	}
 
 	for _, option := range options {
@@ -48,7 +33,8 @@ func New(gateways []core.GatewayInterface, options ...func(*Gsms)) *Gsms {
 	return gsms
 }
 
-func (g *Gsms) Send(to int64, message core.MessageInterface, gateways ...string) ([]*core.Result, error) {
+// Send a message.
+func (g *Gsms) Send(to interface{}, message core.MessageInterface, gateways ...string) ([]*core.Result, error) {
 
 	if len(gateways) == 0 {
 		var err error
@@ -64,10 +50,30 @@ func (g *Gsms) Send(to int64, message core.MessageInterface, gateways ...string)
 
 	gateways = g.formatGateways(message, gateways)
 
-	phoneNumber := core.NewNewPhoneNumberWithoutIDDCode(to)
+	var phoneNumber *core.PhoneNumber
+
+	switch to.(type) {
+	case *core.PhoneNumber:
+		phoneNumber = to.(*core.PhoneNumber)
+	case int:
+		phoneNumber = core.NewPhoneNumberWithoutIDDCode(to.(int))
+	case string:
+		number, err := strconv.Atoi(to.(string))
+		if err != nil {
+			return nil, err
+		}
+
+		phoneNumber = core.NewPhoneNumberWithoutIDDCode(number)
+	default:
+		return nil, core.ErrInvalidPhoneNumber
+	}
 
 	var results []*core.Result
 	isSuccessful := false
+
+	request := &core.Request{
+		Timeout: g.Timeout,
+	}
 
 	for _, gateway := range gateways {
 
@@ -93,7 +99,7 @@ func (g *Gsms) Send(to int64, message core.MessageInterface, gateways ...string)
 			continue
 		}
 
-		result.Result, result.Error = gw.Send(phoneNumber, message)
+		result.Result, result.Error = gw.Send(phoneNumber, message, request)
 
 		if result.Error != nil {
 			result.Status = core.StatusFailure

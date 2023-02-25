@@ -1,10 +1,13 @@
 package yunpian
 
 import (
-	"github.com/jarcoal/httpmock"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/maiqingqiang/gsms/core"
 	"github.com/stretchr/testify/assert"
-	"net/http"
+	netUrl "net/url"
+	"strings"
 	"testing"
 )
 
@@ -40,39 +43,12 @@ func Test_buildEndpoint(t *testing.T) {
 }
 
 func TestGateway_Send(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	httpmock.RegisterResponder(
-		http.MethodPost,
-		"https://sms.yunpian.com/v2/sms/single_send.json",
-		func(request *http.Request) (*http.Response, error) {
-			if request.FormValue("mobile") == "18888888881" {
-				return httpmock.NewStringResponse(400, NotSupportCountry), nil
-			}
-
-			return httpmock.NewStringResponse(200, Success), nil
-		},
-	)
-
-	httpmock.RegisterResponder(
-		http.MethodPost,
-		"https://sms.yunpian.com/v2/sms/tpl_single_send.json",
-		func(request *http.Request) (*http.Response, error) {
-			if request.FormValue("mobile") == "18888888881" {
-				return httpmock.NewStringResponse(400, NotSupportCountry), nil
-			}
-
-			return httpmock.NewStringResponse(200, Success), nil
-		},
-	)
-
 	type fields struct {
 		ApiKey    string
 		Signature string
 	}
 	type args struct {
-		to      int64
+		to      int
 		message core.MessageInterface
 	}
 	tests := []struct {
@@ -155,9 +131,9 @@ func TestGateway_Send(t *testing.T) {
 				Signature: tt.fields.Signature,
 			}
 
-			phoneNumber := core.NewNewPhoneNumberWithoutIDDCode(tt.args.to)
+			phoneNumber := core.NewPhoneNumberWithoutIDDCode(tt.args.to)
 
-			got, err := gateway.Send(phoneNumber, tt.args.message)
+			got, err := gateway.Send(phoneNumber, tt.args.message, &RequestTest{})
 			if (err != nil) != (tt.wantErr != "") {
 				assert.ErrorContainsf(t, err, tt.wantErr, "Send(%d, %v)", tt.args.to, tt.args.message)
 			}
@@ -191,4 +167,39 @@ func Test_buildTplVal(t *testing.T) {
 			assert.Equalf(t, tt.want, buildTplVal(tt.args.data), "buildTplVal(%v)", tt.args.data)
 		})
 	}
+}
+
+var _ core.RequestInterface = (*RequestTest)(nil)
+
+type RequestTest struct {
+}
+
+func (r RequestTest) Request(method, url string, data interface{}, options ...core.Option) ([]byte, error) {
+	return nil, nil
+}
+
+func (r RequestTest) Get(url string, data interface{}) ([]byte, error) {
+	return nil, nil
+}
+
+func (r RequestTest) Post(url string, data interface{}) ([]byte, error) {
+	if strings.Contains(url, "single_send") && data.(netUrl.Values).Get("mobile") == "18888888881" {
+		return []byte(NotSupportCountry), nil
+	}
+
+	return []byte(Success), nil
+}
+
+func (r RequestTest) GetWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
+	return "", nil
+}
+
+func (r RequestTest) PostWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
+	body, err := r.Post(url, data)
+	err = json.Unmarshal(body, v)
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("json unmarshal error: %s body: %s", err.Error(), string(body)))
+	}
+
+	return string(body), nil
 }

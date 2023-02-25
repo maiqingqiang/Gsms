@@ -6,9 +6,9 @@ type GatewayInterface interface {
 	// Name Get gateway name
 	Name() string
 	// Send a short message
-	Send(to PhoneNumberInterface, message MessageInterface) (string, error)
+	Send(to PhoneNumberInterface, message MessageInterface, request RequestInterface) (string, error)
 }
 
-type base struct {
-	timeout time.Duration
+type GatewayBase struct {
+	Timeout time.Duration
 }

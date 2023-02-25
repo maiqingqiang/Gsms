@@ -7,7 +7,7 @@ import (
 )
 
 type PhoneNumberInterface interface {
-	Number() int64
+	Number() int
 	IDDCode() int
 	UniversalNumber() string
 	ZeroPrefixedNumber() string
@@ -17,11 +17,11 @@ type PhoneNumberInterface interface {
 }
 
 type PhoneNumber struct {
-	number  int64
+	number  int
 	iddCode int
 }
 
-func NewPhoneNumber(numberWithoutIDDCode int64, iddCodeStr string) (*PhoneNumber, error) {
+func NewPhoneNumber(numberWithoutIDDCode int, iddCodeStr string) (*PhoneNumber, error) {
 	iddCodeStr = strings.TrimLeft(iddCodeStr, "+0")
 
 	iddCode, err := strconv.Atoi(iddCodeStr)
@@ -36,12 +36,12 @@ func NewPhoneNumber(numberWithoutIDDCode int64, iddCodeStr string) (*PhoneNumber
 	}, nil
 }
 
-func NewNewPhoneNumberWithoutIDDCode(numberWithoutIDDCode int64) *PhoneNumber {
+func NewPhoneNumberWithoutIDDCode(numberWithoutIDDCode int) *PhoneNumber {
 	return &PhoneNumber{number: numberWithoutIDDCode}
 }
 
 // Number e.g. 86.
-func (p *PhoneNumber) Number() int64 {
+func (p *PhoneNumber) Number() int {
 	return p.number
 }
 
