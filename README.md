@@ -201,6 +201,6 @@ client.Send(18888888888, &OrderPaidMessage{OrderNo: "1234"})
 [go-report-card]: https://goreportcard.com/badge/github.com/maiqingqiang/Gsms
 [go-report-card-url]: https://goreportcard.com/report/github.com/maiqingqiang/Gsms
 [go.dev-reference]: https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white
-[go.dev-reference-url]: https://pkg.go.dev/gorm.io/gorm?tab=doc
+[go.dev-reference-url]: https://pkg.go.dev/github.com/maiqingqiang/gsms?tab=doc
 [go-pacakge]: https://github.com/maiqingqiang/Gsms/actions/workflows/test.yml/badge.svg?branch=main
 [go-pacakge-url]: https://github.com/maiqingqiang/Gsms/actions/workflows/test.yml
