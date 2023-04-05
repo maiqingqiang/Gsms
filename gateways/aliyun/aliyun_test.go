@@ -1,9 +1,6 @@
 package aliyun
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/maiqingqiang/gsms/core"
 	"github.com/stretchr/testify/assert"
 	"net/url"
@@ -76,7 +73,7 @@ func TestGateway_Send(t *testing.T) {
 	type args struct {
 		to      int
 		message core.MessageInterface
-		request core.RequestInterface
+		request core.ClientInterface
 	}
 	tests := []struct {
 		name    string
@@ -97,7 +94,7 @@ func TestGateway_Send(t *testing.T) {
 				message: &core.Message{
 					Content: "祝您万事如意，财源广进。",
 				},
-				request: &RequestTest{},
+				request: &ClientTest{},
 			},
 			want:    Success,
 			wantErr: "",
@@ -122,37 +119,20 @@ func TestGateway_Send(t *testing.T) {
 	}
 }
 
-var _ core.RequestInterface = (*RequestTest)(nil)
+var _ core.ClientInterface = (*ClientTest)(nil)
 
-type RequestTest struct {
+type ClientTest struct {
 }
 
-func (r RequestTest) Request(method, url string, data interface{}, options ...core.Option) ([]byte, error) {
-	return nil, nil
-}
-
-func (r RequestTest) Get(url string, data interface{}) ([]byte, error) {
-	if strings.Contains(url, "single_send") && data.(netUrl.Values).Get("mobile") == "18888888881" {
-		return []byte(`{"Message":"OK","RequestId":"F69545AD-66DC-53BE-B5BD-0E4D2E147AF7","Code":"isv.SMS_TEST_NUMBER_LIMIT","BizId":"641921677331750484^0"}`), nil
+func (c ClientTest) GetWithUnmarshal(api string, data interface{}, v core.ResponseInterface) (string, error) {
+	body := Success
+	if strings.Contains(api, "single_send") && data.(netUrl.Values).Get("mobile") == "18888888881" {
+		body = `{"Message":"OK","RequestId":"F69545AD-66DC-53BE-B5BD-0E4D2E147AF7","Code":"isv.SMS_TEST_NUMBER_LIMIT","BizId":"641921677331750484^0"}`
 	}
 
-	return []byte(Success), nil
+	return body, v.Unmarshal([]byte(body))
 }
 
-func (r RequestTest) Post(url string, data interface{}) ([]byte, error) {
-	return nil, nil
-}
-
-func (r RequestTest) GetWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
-	body, err := r.Get(url, data)
-	err = json.Unmarshal(body, v)
-	if err != nil {
-		return "", errors.New(fmt.Sprintf("json unmarshal error: %s body: %s", err.Error(), string(body)))
-	}
-
-	return string(body), nil
-}
-
-func (r RequestTest) PostWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
-	return "", nil
+func (c ClientTest) PostFormWithUnmarshal(api string, data string, v core.ResponseInterface) (string, error) {
+	panic("implement me")
 }

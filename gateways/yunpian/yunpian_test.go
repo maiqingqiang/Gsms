@@ -1,12 +1,8 @@
 package yunpian
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/maiqingqiang/gsms/core"
 	"github.com/stretchr/testify/assert"
-	netUrl "net/url"
 	"strings"
 	"testing"
 )
@@ -133,7 +129,7 @@ func TestGateway_Send(t *testing.T) {
 
 			phoneNumber := core.NewPhoneNumberWithoutIDDCode(tt.args.to)
 
-			got, err := gateway.Send(phoneNumber, tt.args.message, &RequestTest{})
+			got, err := gateway.Send(phoneNumber, tt.args.message, &ClientTest{})
 			if (err != nil) != (tt.wantErr != "") {
 				assert.ErrorContainsf(t, err, tt.wantErr, "Send(%d, %v)", tt.args.to, tt.args.message)
 			}
@@ -169,37 +165,21 @@ func Test_buildTplVal(t *testing.T) {
 	}
 }
 
-var _ core.RequestInterface = (*RequestTest)(nil)
+var _ core.ClientInterface = (*ClientTest)(nil)
 
-type RequestTest struct {
+type ClientTest struct {
 }
 
-func (r RequestTest) Request(method, url string, data interface{}, options ...core.Option) ([]byte, error) {
-	return nil, nil
+func (c ClientTest) GetWithUnmarshal(api string, data interface{}, v core.ResponseInterface) (string, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r RequestTest) Get(url string, data interface{}) ([]byte, error) {
-	return nil, nil
-}
-
-func (r RequestTest) Post(url string, data interface{}) ([]byte, error) {
-	if strings.Contains(url, "single_send") && data.(netUrl.Values).Get("mobile") == "18888888881" {
-		return []byte(NotSupportCountry), nil
+func (c ClientTest) PostFormWithUnmarshal(api string, data string, v core.ResponseInterface) (string, error) {
+	body := Success
+	if strings.Contains(api, "single_send") && strings.Contains(data, "18888888881") {
+		body = NotSupportCountry
 	}
 
-	return []byte(Success), nil
-}
-
-func (r RequestTest) GetWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
-	return "", nil
-}
-
-func (r RequestTest) PostWithUnmarshal(url string, data interface{}, v interface{}) (string, error) {
-	body, err := r.Post(url, data)
-	err = json.Unmarshal(body, v)
-	if err != nil {
-		return "", errors.New(fmt.Sprintf("json unmarshal error: %s body: %s", err.Error(), string(body)))
-	}
-
-	return string(body), nil
+	return body, v.Unmarshal([]byte(body))
 }

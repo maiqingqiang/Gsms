@@ -10,7 +10,7 @@ type Option func(*Gsms)
 // WithTimeout set the timeout.
 func WithTimeout(timeout time.Duration) func(*Gsms) {
 	return func(gsms *Gsms) {
-		gsms.Timeout = timeout
+		gsms.client.HttpClient.Timeout = timeout
 	}
 }
 

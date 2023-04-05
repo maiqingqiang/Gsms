@@ -1,7 +1,6 @@
 package yunpian
 
 import (
-	"errors"
 	"fmt"
 	"github.com/maiqingqiang/gsms/core"
 	"net/url"
@@ -16,7 +15,7 @@ type Gateway struct {
 }
 
 // Send message.
-func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, request core.RequestInterface) (string, error) {
+func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, client core.ClientInterface) (string, error) {
 
 	p := url.Values{}
 	method := MethodSingleSend
@@ -53,12 +52,11 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 	endpoint := buildEndpoint(ProductSms, ResourceSms, method)
 
 	response := &Response{}
-	body, err := request.PostWithUnmarshal(endpoint, p, response)
 
-	if !response.isSuccessful() {
-		return "", errors.New(fmt.Sprintf("send failed code:%d msg:%s detail:%s", response.Code, response.Msg, response.Detail))
+	body, err := client.PostFormWithUnmarshal(endpoint, p.Encode(), response)
+	if err != nil {
+		return "", err
 	}
-
 	return body, nil
 }
 

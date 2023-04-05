@@ -3,6 +3,7 @@ package gsms
 import (
 	"github.com/maiqingqiang/gsms/core"
 	"github.com/maiqingqiang/gsms/strategies"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -12,6 +13,7 @@ type Gsms struct {
 	Timeout         time.Duration
 	Strategy        core.StrategyInterface
 	Gateways        map[string]core.GatewayInterface
+	client          *core.Client
 }
 
 func New(gateways []core.GatewayInterface, options ...Option) *Gsms {
@@ -24,6 +26,9 @@ func New(gateways []core.GatewayInterface, options ...Option) *Gsms {
 	gsms := &Gsms{
 		Gateways: gatewaysMap,
 		Strategy: &strategies.OrderStrategy{},
+		client: core.NewClient(&http.Client{
+			Timeout: time.Second * 5,
+		}),
 	}
 
 	for _, option := range options {
@@ -71,10 +76,6 @@ func (g *Gsms) Send(to interface{}, message core.MessageInterface, gateways ...s
 	var results []*core.Result
 	isSuccessful := false
 
-	request := &core.Request{
-		Timeout: g.Timeout,
-	}
-
 	for _, gateway := range gateways {
 
 		result := &core.Result{
@@ -99,7 +100,7 @@ func (g *Gsms) Send(to interface{}, message core.MessageInterface, gateways ...s
 			continue
 		}
 
-		result.Result, result.Error = gw.Send(phoneNumber, message, request)
+		result.Result, result.Error = gw.Send(phoneNumber, message, g.client)
 
 		if result.Error != nil {
 			result.Status = core.StatusFailure

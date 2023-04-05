@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/maiqingqiang/gsms/core"
@@ -27,7 +26,7 @@ func (g *Gateway) Name() string {
 	return NAME
 }
 
-func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, request core.RequestInterface) (string, error) {
+func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, client core.ClientInterface) (string, error) {
 	query := url.Values{}
 
 	query.Add("RegionId", EndpointRegionId)
@@ -62,13 +61,9 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 
 	response := &Response{}
 
-	body, err := request.GetWithUnmarshal(EndpointUrl, query, response)
+	body, err := client.GetWithUnmarshal(EndpointUrl, query, response)
 	if err != nil {
 		return "", err
-	}
-
-	if !response.isSuccessful() {
-		return "", errors.New(fmt.Sprintf("send failed code:%s msg:%s", response.Code, response.Message))
 	}
 
 	return body, nil

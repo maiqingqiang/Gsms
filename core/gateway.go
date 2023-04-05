@@ -6,7 +6,7 @@ type GatewayInterface interface {
 	// Name Get gateway name
 	Name() string
 	// Send a short message
-	Send(to PhoneNumberInterface, message MessageInterface, request RequestInterface) (string, error)
+	Send(to PhoneNumberInterface, message MessageInterface, request ClientInterface) (string, error)
 }
 
 type GatewayBase struct {
