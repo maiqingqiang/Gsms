@@ -1,20 +1,10 @@
-package core
+package gsms
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
 )
-
-type PhoneNumberInterface interface {
-	Number() int
-	IDDCode() int
-	UniversalNumber() string
-	ZeroPrefixedNumber() string
-	PrefixedIDDCode(prefix string) string
-	String() string
-	InChineseMainland() bool
-}
 
 type PhoneNumber struct {
 	number  int
@@ -50,7 +40,7 @@ func (p *PhoneNumber) IDDCode() int {
 	return p.iddCode
 }
 
-//UniversalNumber  e.g. +8613800138000.
+// UniversalNumber  e.g. +8613800138000.
 func (p *PhoneNumber) UniversalNumber() string {
 	return fmt.Sprintf("%s%d", p.PrefixedIDDCode("+"), p.number)
 }

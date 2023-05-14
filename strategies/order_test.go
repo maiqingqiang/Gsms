@@ -15,7 +15,7 @@ func TestOrderStrategy_Apply(t *testing.T) {
 		want []string
 	}{
 		{
-			name: "Order Strategy",
+			name: "Order strategy",
 			args: args{
 				gateways: []string{"yunpian", "aliyun", "aliyunrest", "aliyunintl", "submail", "huyi", "juhe"},
 			},

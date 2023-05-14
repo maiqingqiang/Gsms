@@ -2,12 +2,13 @@ package yunpian
 
 import (
 	"fmt"
-	"github.com/maiqingqiang/gsms/core"
+	"github.com/maiqingqiang/gsms"
+	"github.com/maiqingqiang/gsms/utils/dove"
 	"net/url"
 	"strings"
 )
 
-var _ core.GatewayInterface = (*Gateway)(nil)
+var _ gsms.Gateway = (*Gateway)(nil)
 
 type Gateway struct {
 	ApiKey    string
@@ -15,8 +16,7 @@ type Gateway struct {
 }
 
 // Send message.
-func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, client core.ClientInterface) (string, error) {
-
+func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.Config) (err error) {
 	p := url.Values{}
 	method := MethodSingleSend
 	p.Add("apikey", g.ApiKey)
@@ -24,17 +24,17 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 
 	template, err := message.GetTemplate(g)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	data, err := message.GetData(g)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	content, err := message.GetContent(g)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	if template != "" {
@@ -51,13 +51,20 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 
 	endpoint := buildEndpoint(ProductSms, ResourceSms, method)
 
-	response := &Response{}
+	var response Response
 
-	body, err := client.PostFormWithUnmarshal(endpoint, p.Encode(), response)
+	d := dove.New(dove.WithTimeout(config.Timeout), dove.WithLogger(config.Logger))
+
+	err = d.PostForm(endpoint, strings.NewReader(p.Encode()), &response)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return body, nil
+
+	if response.Code != SuccessCode {
+		return fmt.Errorf("send failed code:%d msg:%s detail:%s", response.Code, response.Msg, response.Detail)
+	}
+
+	return
 }
 
 // buildEndpoint Build endpoint url.

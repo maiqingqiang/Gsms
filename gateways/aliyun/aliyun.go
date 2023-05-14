@@ -7,14 +7,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/maiqingqiang/gsms/core"
+	"github.com/maiqingqiang/gsms"
+	"github.com/maiqingqiang/gsms/utils/dove"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
 
-var _ core.GatewayInterface = (*Gateway)(nil)
+var _ gsms.Gateway = (*Gateway)(nil)
 
 type Gateway struct {
 	AccessKeyId     string
@@ -26,7 +27,7 @@ func (g *Gateway) Name() string {
 	return NAME
 }
 
-func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterface, client core.ClientInterface) (string, error) {
+func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.Config) error {
 	query := url.Values{}
 
 	query.Add("RegionId", EndpointRegionId)
@@ -43,30 +44,36 @@ func (g *Gateway) Send(to core.PhoneNumberInterface, message core.MessageInterfa
 
 	template, err := message.GetTemplate(g)
 	if err != nil {
-		return "", err
+		return err
 	}
 	query.Add("TemplateCode", template)
 
 	data, err := message.GetData(g)
 	if err != nil {
-		return "", err
+		return err
 	}
 	marshal, err := json.Marshal(data)
 	if err != nil {
-		return "", err
+		return err
 	}
 	query.Add("TemplateParam", string(marshal))
 
 	query.Add("Signature", generateSign(http.MethodGet, g.AccessKeySecret, query))
 
-	response := &Response{}
+	var response Response
 
-	body, err := client.GetWithUnmarshal(EndpointUrl, query, response)
+	d := dove.New(dove.WithTimeout(config.Timeout), dove.WithLogger(config.Logger))
+
+	err = d.Get(EndpointUrl, strings.NewReader(query.Encode()), &response)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return body, nil
+	if response.Code != OK {
+		return fmt.Errorf("send failed: %+v", response)
+	}
+
+	return nil
 }
 
 // generateSign Generate sign.

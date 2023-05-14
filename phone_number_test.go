@@ -1,4 +1,4 @@
-package core
+package gsms
 
 import (
 	"github.com/stretchr/testify/assert"

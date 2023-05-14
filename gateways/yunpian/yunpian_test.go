@@ -1,10 +1,12 @@
 package yunpian
 
 import (
-	"github.com/maiqingqiang/gsms/core"
+	"github.com/jarcoal/httpmock"
+	"github.com/maiqingqiang/gsms"
+	"github.com/maiqingqiang/gsms/message"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
+	"time"
 )
 
 const NotSupportCountry = `{"http_status_code":400,"code":20,"msg":"暂不支持的国家地区","detail":"请确认号码归属地"}`
@@ -39,104 +41,175 @@ func Test_buildEndpoint(t *testing.T) {
 }
 
 func TestGateway_Send(t *testing.T) {
-	type fields struct {
-		ApiKey    string
-		Signature string
-	}
-	type args struct {
-		to      int
-		message core.MessageInterface
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr string
-	}{
-		{
-			name: "single send 1",
-			fields: fields{
-				ApiKey:    "ApiKey",
-				Signature: "【云片】",
-			},
-			args: args{
-				to: 18888888881,
-				message: &core.Message{
-					Content: "祝您万事如意，财源广进。",
-				},
-			},
-			want:    "",
-			wantErr: "暂不支持的国家地区",
-		},
-		{
-			name: "single send 2",
-			fields: fields{
-				ApiKey:    "ApiKey",
-				Signature: "【云片】",
-			},
-			args: args{
-				to: 18888888882,
-				message: &core.Message{
-					Content: "祝您万事如意，财源广进。",
-				},
-			},
-			want:    Success,
-			wantErr: "",
-		},
-		{
-			name: "tpl single send 1",
-			fields: fields{
-				ApiKey:    "ApiKey",
-				Signature: "【云片】",
-			},
-			args: args{
-				to: 18888888881,
-				message: &core.Message{
-					Template: "15320323",
-					Data: map[string]string{
-						"code": "6379",
-					},
-				},
-			},
-			want:    "",
-			wantErr: "暂不支持的国家地区",
-		}, {
-			name: "tpl single send 2",
-			fields: fields{
-				ApiKey:    "ApiKey",
-				Signature: "【云片】",
-			},
-			args: args{
-				to: 18888888882,
-				message: &core.Message{
-					Template: "15320323",
-					Data: map[string]string{
-						"code": "6379",
-					},
-				},
-			},
-			want:    Success,
-			wantErr: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gateway := &Gateway{
-				ApiKey:    tt.fields.ApiKey,
-				Signature: tt.fields.Signature,
-			}
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
 
-			phoneNumber := core.NewPhoneNumberWithoutIDDCode(tt.args.to)
+	httpmock.RegisterResponder("POST", `https://sms.yunpian.com/v2/sms/single_send.json`,
+		httpmock.NewStringResponder(200, `{"code":0,"msg":"发送成功","count":1,"fee":0.05,"unit":"RMB","mobile":"18888888888","sid":74712264988}`))
 
-			got, err := gateway.Send(phoneNumber, tt.args.message, &ClientTest{})
-			if (err != nil) != (tt.wantErr != "") {
-				assert.ErrorContainsf(t, err, tt.wantErr, "Send(%d, %v)", tt.args.to, tt.args.message)
-			}
+	httpmock.RegisterResponder("POST", `https://sms.yunpian.com/v2/sms/tpl_single_send.json`,
+		httpmock.NewStringResponder(200, `{"code":0,"msg":"发送成功","count":1,"fee":0.05,"unit":"RMB","mobile":"18888888888","sid":74712264988}`))
 
-			assert.Equalf(t, tt.want, got, "Send(%v, %v)", tt.args.to, tt.args.message)
-		})
+	g := &Gateway{
+		ApiKey:    "ApiKey",
+		Signature: "Signature",
 	}
+
+	config := &gsms.Config{
+		Timeout: 5 * time.Second,
+		Logger:  gsms.NewLogger().LogMode(gsms.Info),
+	}
+
+	phoneNumber := gsms.NewPhoneNumberWithoutIDDCode(188888888888)
+
+	err := g.Send(
+		phoneNumber,
+		&message.Message{
+			Template: "SMS_00000001",
+			Data: map[string]string{
+				"code": "9527",
+			},
+		},
+		config,
+	)
+
+	assert.NoError(t, err)
+
+	err = g.Send(
+		phoneNumber,
+		&message.Message{
+			Template: func(gateway gsms.Gateway) string {
+				if gateway.Name() == NAME {
+					return "SMS_271311117"
+				}
+				return "5532011"
+			},
+			Data: func(gateway gsms.Gateway) map[string]string {
+				if gateway.Name() == NAME {
+					return map[string]string{
+						"code": "1111",
+					}
+				}
+				return map[string]string{
+					"code": "6379",
+				}
+			},
+		},
+		config,
+	)
+
+	assert.NoError(t, err)
+
+	err = g.Send(
+		phoneNumber,
+		&message.Message{
+			Content: "【Gsms】您的验证码是521410",
+		},
+		config,
+	)
+
+	assert.NoError(t, err)
+
+	err = g.Send(
+		phoneNumber,
+		&message.Message{
+			Content: func(gateway gsms.Gateway) string {
+				if gateway.Name() == NAME {
+					return "【Gsms】您的验证码是521410"
+				}
+				return "【Gsms】活动验证码是111"
+			},
+		},
+		config,
+	)
+
+	assert.NoError(t, err)
+}
+
+func TestGateway_Send_Failed(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterResponder("POST", `https://sms.yunpian.com/v2/sms/single_send.json`,
+		httpmock.NewStringResponder(200, `{"http_status_code":400,"code":20,"msg":"暂不支持的国家地区","detail":"请确认号码归属地"}`))
+
+	httpmock.RegisterResponder("POST", `https://sms.yunpian.com/v2/sms/tpl_single_send.json`,
+		httpmock.NewStringResponder(200, `{"http_status_code":400,"code":20,"msg":"暂不支持的国家地区","detail":"请确认号码归属地"}`))
+
+	g := &Gateway{
+		ApiKey:    "ApiKey",
+		Signature: "Signature",
+	}
+
+	config := &gsms.Config{
+		Timeout: 5 * time.Second,
+		Logger:  gsms.NewLogger().LogMode(gsms.Info),
+	}
+
+	phoneNumber := gsms.NewPhoneNumberWithoutIDDCode(188888888888)
+
+	err := g.Send(
+		phoneNumber,
+		&message.Message{
+			Template: "SMS_00000001",
+			Data: map[string]string{
+				"code": "9527",
+			},
+		},
+		config,
+	)
+
+	assert.Error(t, err)
+
+	err = g.Send(
+		phoneNumber,
+		&message.Message{
+			Template: func(gateway gsms.Gateway) string {
+				if gateway.Name() == NAME {
+					return "SMS_271311117"
+				}
+				return "5532011"
+			},
+			Data: func(gateway gsms.Gateway) map[string]string {
+				if gateway.Name() == NAME {
+					return map[string]string{
+						"code": "1111",
+					}
+				}
+				return map[string]string{
+					"code": "6379",
+				}
+			},
+		},
+		config,
+	)
+
+	assert.Error(t, err)
+
+	err = g.Send(
+		phoneNumber,
+		&message.Message{
+			Content: "【Gsms】您的验证码是521410",
+		},
+		config,
+	)
+
+	assert.Error(t, err)
+
+	err = g.Send(
+		phoneNumber,
+		&message.Message{
+			Content: func(gateway gsms.Gateway) string {
+				if gateway.Name() == NAME {
+					return "【Gsms】您的验证码是521410"
+				}
+				return "【Gsms】活动验证码是111"
+			},
+		},
+		config,
+	)
+
+	assert.Error(t, err)
 }
 
 func Test_buildTplVal(t *testing.T) {
@@ -163,23 +236,4 @@ func Test_buildTplVal(t *testing.T) {
 			assert.Equalf(t, tt.want, buildTplVal(tt.args.data), "buildTplVal(%v)", tt.args.data)
 		})
 	}
-}
-
-var _ core.ClientInterface = (*ClientTest)(nil)
-
-type ClientTest struct {
-}
-
-func (c ClientTest) GetWithUnmarshal(api string, data interface{}, v core.ResponseInterface) (string, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (c ClientTest) PostFormWithUnmarshal(api string, data string, v core.ResponseInterface) (string, error) {
-	body := Success
-	if strings.Contains(api, "single_send") && strings.Contains(data, "18888888881") {
-		body = NotSupportCountry
-	}
-
-	return body, v.Unmarshal([]byte(body))
 }

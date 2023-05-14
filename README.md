@@ -46,26 +46,32 @@ package main
 
 import (
 	"github.com/maiqingqiang/gsms"
-	"github.com/maiqingqiang/gsms/core"
+	"github.com/maiqingqiang/gsms/gateways/aliyun"
 	"github.com/maiqingqiang/gsms/gateways/yunpian"
+	"github.com/maiqingqiang/gsms/message"
 	"log"
 )
 
 func main() {
-	g := gsms.New(
-		[]core.Gateway{
+	client := gsms.New(
+		[]gsms.Gateway{
 			&yunpian.Gateway{
-				ApiKey:    "f4c1c41f48120eb311111111111097",
-				Signature: "【默认签名】",
+				ApiKey:    "ApiKey",
+				Signature: "Signature",
+			},
+			&aliyun.Gateway{
+				AccessKeyId:     "AccessKeyId",
+				AccessKeySecret: "AccessKeySecret",
+				SignName:        "SignName",
 			},
 		},
-		gsms.WithDefaultGateway([]string{
-			yunpian.NAME,
+		gsms.WithGateways([]string{
+			yunpian.NAME, aliyun.NAME,
 		}),
 	)
 
-	results, err := g.Send(18888888888, &core.Message{
-		Template: "SMS_00000001",
+	results, err := client.Send(18888888888, &message.Message{
+		Template: "5532044",
 		Data: map[string]string{
 			"code": "521410",
 		},
@@ -135,46 +141,71 @@ client.Send(18888888888, &core.Message{
 
 ## 自定义网关
 
-只需要实现 `core.GatewayInterface` 接口即可，例如：
+只需要实现 `gsms.Gateway` 接口即可，例如：
 
 ## 场景发送
 
 ```go
 
-var _ core.MessageInterface = (*OrderPaidMessage)(nil)
+var _ gsms.Message = (*OrderPaidMessage)(nil)
 
 type OrderPaidMessage struct {
-	OrderNo string
+    OrderNo string
 }
 
 func (o *OrderPaidMessage) Gateways() ([]string, error) {
-	return []string{yunpian.NAME}, nil
+    return []string{yunpian.NAME}, nil
 }
 
-func (o *OrderPaidMessage) Strategy() (core.StrategyInterface, error) {
-	return nil, nil
+func (o *OrderPaidMessage) Strategy() (gsms.Strategy, error) {
+    return nil, nil
 }
 
-func (o *OrderPaidMessage) GetContent(gateway core.GatewayInterface) (string, error) {
-	return fmt.Sprintf("您的订单:%s, 已经完成付款", o.OrderNo), nil
+func (o *OrderPaidMessage) GetContent(gateway gsms.Gateway) (string, error) {
+    return fmt.Sprintf("您的订单:%s, 已经完成付款", o.OrderNo), nil
 }
 
-func (o *OrderPaidMessage) GetTemplate(gateway core.GatewayInterface) (string, error) {
-	return "5532044", nil
+func (o *OrderPaidMessage) GetTemplate(gateway gsms.Gateway) (string, error) {
+    return "5532044", nil
 }
 
-func (o *OrderPaidMessage) GetData(gateway core.GatewayInterface) (map[string]string, error) {
-	return map[string]string{
-		"code": "6379",
-	}, nil
+func (o *OrderPaidMessage) GetData(gateway gsms.Gateway) (map[string]string, error) {
+    return map[string]string{
+    "code": "6379",
+    }, nil
 }
 
-func (o *OrderPaidMessage) GetType(gateway core.GatewayInterface) (string, error) {
-	return core.TextMessage, nil
+func (o *OrderPaidMessage) GetType(gateway gsms.Gateway) (string, error) {
+    return message.TextMessage, nil
 }
 
 client.Send(18888888888, &OrderPaidMessage{OrderNo: "1234"})
 
+```
+
+## 各平台配置说明
+
+### [阿里云](https://www.aliyun.com/)
+
+短信内容使用 `Template` + `Data`
+
+```go
+&aliyun.Gateway{
+    AccessKeyId:     "AccessKeyId",
+    AccessKeySecret: "AccessKeySecret",
+    SignName:        "【默认签名】",
+}
+```
+
+### [云片](https://www.yunpian.com)
+
+短信内容使用 `Content`
+
+```go
+&yunpian.Gateway{
+    ApiKey:    "ApiKey",
+    Signature: "【默认签名】", // 内容中无签名时使用
+}
 ```
 
 ## 版权说明

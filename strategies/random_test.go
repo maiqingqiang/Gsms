@@ -15,7 +15,7 @@ func TestRandomStrategy_Apply(t *testing.T) {
 		want []string
 	}{
 		{
-			name: "Random Strategy",
+			name: "Random strategy",
 			args: args{
 				gateways: []string{"yunpian", "aliyun", "aliyunrest", "aliyunintl", "submail", "huyi", "juhe"},
 			},
