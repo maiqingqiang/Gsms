@@ -16,8 +16,6 @@
 
 <p align="center">:calling: 一款满足你的多种发送需求的短信发送组件，此项目参考 <a href="https://github.com/overtrue/easy-sms">easy-sms</a> 实现的 Go 版本 </p>
 
-> 正在开发中~~~~~~~~~~~
-
 ## 特点
 
 1. 支持目前市面多家服务商
