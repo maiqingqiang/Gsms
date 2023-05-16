@@ -15,12 +15,32 @@ import (
 	"time"
 )
 
+const NAME = "aliyun"
+
+const EndpointUrl = "http://dysmsapi.aliyuncs.com"
+const EndpointMethod = "SendSms"
+const EndpointVersion = "2017-05-25"
+const EndpointFormat = "JSON"
+const EndpointRegionId = "cn-hangzhou"
+const EndpointSignatureMethod = "HMAC-SHA1"
+const EndpointSignatureVersion = "1.0"
+const OK = "OK"
+
 var _ gsms.Gateway = (*Gateway)(nil)
 
 type Gateway struct {
 	AccessKeyId     string
 	AccessKeySecret string
 	SignName        string
+}
+
+// SendSmsResponse
+// https://help.aliyun.com/document_detail/419273.htm?spm=a2c4g.11186623.0.0.4a0879bebUrJyq#api-detail-40
+type SendSmsResponse struct {
+	Code      string `json:"Code"`
+	Message   string `json:"Message"`
+	BizId     string `json:"BizId"`
+	RequestId string `json:"RequestId"`
 }
 
 func (g *Gateway) Name() string {
@@ -58,9 +78,9 @@ func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.
 	}
 	query.Add("TemplateParam", string(marshal))
 
-	query.Add("Signature", generateSign(http.MethodGet, g.AccessKeySecret, query))
+	query.Add("Signature", g.generateSign(query))
 
-	var response Response
+	var response SendSmsResponse
 
 	d := dove.New(dove.WithTimeout(config.Timeout), dove.WithLogger(config.Logger))
 
@@ -78,18 +98,16 @@ func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.
 
 // generateSign Generate sign.
 // https://help.aliyun.com/document_detail/101343.html
-func generateSign(httpMethod, accessKeySecret string, query url.Values) string {
-	httpMethod = strings.ToUpper(httpMethod)
-
+func (g *Gateway) generateSign(query url.Values) string {
 	encode := url.QueryEscape(query.Encode())
 
 	encode = strings.Replace(encode, "+", "%20", -1)
 	encode = strings.Replace(encode, "*", "%2A", -1)
 	encode = strings.Replace(encode, "%7E", "~", -1)
 
-	h := hmac.New(sha1.New, []byte(accessKeySecret+"&"))
+	h := hmac.New(sha1.New, []byte(g.AccessKeySecret+"&"))
 
-	h.Write([]byte(fmt.Sprintf("%s&%%2F&%s", httpMethod, encode)))
+	h.Write([]byte(fmt.Sprintf("%s&%%2F&%s", http.MethodGet, encode)))
 
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

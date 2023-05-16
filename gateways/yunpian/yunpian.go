@@ -8,11 +8,32 @@ import (
 	"strings"
 )
 
+const NAME = "yunpian"
+
+const EndpointTemplate = "https://%s.yunpian.com/%s/%s/%s.%s"
+const EndpointVersion = "v2"
+const EndpointFormat = "json"
+const ProductSms = "sms"
+const ResourceSms = "sms"
+const SuccessCode = 0
+
+// MethodSingleSend https://www.yunpian.com/official/document/sms/zh_cn/domestic_single_send
+const MethodSingleSend = "single_send"
+
+// MethodTplSingleSend https://www.yunpian.com/official/document/sms/zh_CN/domestic_tpl_single_send
+const MethodTplSingleSend = "tpl_single_send"
+
 var _ gsms.Gateway = (*Gateway)(nil)
 
 type Gateway struct {
 	ApiKey    string
 	Signature string
+}
+
+type SendSmsResponse struct {
+	Code   int    `json:"code"`   // 系统返回码
+	Msg    string `json:"msg"`    // 例如""发送成功""，或者相应错误信息
+	Detail string `json:"detail"` // 具体错误描述或解决方法
 }
 
 // Send message.
@@ -40,7 +61,7 @@ func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.
 	if template != "" {
 		method = MethodTplSingleSend
 		p.Add("tpl_id", template)
-		p.Add("tpl_value", buildTplVal(data))
+		p.Add("tpl_value", g.buildTplVal(data))
 	} else {
 		if !strings.HasPrefix(content, "【") {
 			content = g.Signature + content
@@ -49,9 +70,9 @@ func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.
 		p.Add("text", content)
 	}
 
-	endpoint := buildEndpoint(ProductSms, ResourceSms, method)
+	endpoint := g.buildEndpoint(ProductSms, ResourceSms, method)
 
-	var response Response
+	var response SendSmsResponse
 
 	d := dove.New(dove.WithTimeout(config.Timeout), dove.WithLogger(config.Logger))
 
@@ -68,12 +89,12 @@ func (g *Gateway) Send(to *gsms.PhoneNumber, message gsms.Message, config *gsms.
 }
 
 // buildEndpoint Build endpoint url.
-func buildEndpoint(product, resource, method string) string {
+func (g *Gateway) buildEndpoint(product, resource, method string) string {
 	return fmt.Sprintf(EndpointTemplate, product, EndpointVersion, resource, method, EndpointFormat)
 }
 
 // buildTplVal Build template value.
-func buildTplVal(data map[string]string) string {
+func (g *Gateway) buildTplVal(data map[string]string) string {
 	tplVals := make([]string, 0, len(data))
 	for k, v := range data {
 		tplVals = append(tplVals, fmt.Sprintf("#%s#=%s", k, v))

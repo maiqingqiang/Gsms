@@ -58,7 +58,9 @@ func Test_generateSign(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, generateSign(tt.args.httpMethod, tt.args.accessKeySecret, tt.args.query))
+			g := &Gateway{AccessKeySecret: tt.args.accessKeySecret}
+
+			assert.Equal(t, tt.want, g.generateSign(tt.args.query))
 		})
 	}
 }

@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-const NotSupportCountry = `{"http_status_code":400,"code":20,"msg":"暂不支持的国家地区","detail":"请确认号码归属地"}`
-const Success = `{"code":0,"msg":"发送成功","count":1,"fee":0.05,"unit":"RMB","mobile":"18888888881","sid":74712264988}`
-
 func Test_buildEndpoint(t *testing.T) {
 	type args struct {
 		product  string
@@ -35,7 +32,8 @@ func Test_buildEndpoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, buildEndpoint(tt.args.product, tt.args.resource, tt.args.method), "buildEndpoint(%v, %v, %v)", tt.args.product, tt.args.resource, tt.args.method)
+			g := &Gateway{}
+			assert.Equalf(t, tt.want, g.buildEndpoint(tt.args.product, tt.args.resource, tt.args.method), "buildEndpoint(%v, %v, %v)", tt.args.product, tt.args.resource, tt.args.method)
 		})
 	}
 }
@@ -233,7 +231,8 @@ func Test_buildTplVal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, buildTplVal(tt.args.data), "buildTplVal(%v)", tt.args.data)
+			g := &Gateway{}
+			assert.Equalf(t, tt.want, g.buildTplVal(tt.args.data), "buildTplVal(%v)", tt.args.data)
 		})
 	}
 }

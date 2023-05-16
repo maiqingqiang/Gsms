@@ -11,19 +11,15 @@ type PhoneNumber struct {
 	iddCode int
 }
 
-func NewPhoneNumber(numberWithoutIDDCode int, iddCodeStr string) (*PhoneNumber, error) {
-	iddCodeStr = strings.TrimLeft(iddCodeStr, "+0")
+func NewPhoneNumber(numberWithoutIDDCode int, iddCode string) *PhoneNumber {
+	iddCode = strings.TrimLeft(iddCode, "+0")
 
-	iddCode, err := strconv.Atoi(iddCodeStr)
-
-	if err != nil {
-		return nil, ErrInvalidIDDCode
-	}
+	iddCodeInt, _ := strconv.Atoi(iddCode)
 
 	return &PhoneNumber{
 		number:  numberWithoutIDDCode,
-		iddCode: iddCode,
-	}, nil
+		iddCode: iddCodeInt,
+	}
 }
 
 func NewPhoneNumberWithoutIDDCode(numberWithoutIDDCode int) *PhoneNumber {

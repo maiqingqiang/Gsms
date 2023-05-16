@@ -8,8 +8,7 @@ import (
 func TestPhoneNumber(t *testing.T) {
 	as := assert.New(t)
 
-	phoneNumber, err := NewPhoneNumber(18888888888, "86")
-	as.Nil(err)
+	phoneNumber := NewPhoneNumber(18888888888, "86")
 	as.Equal(86, phoneNumber.IDDCode())
 	as.EqualValues(18888888888, phoneNumber.Number())
 	as.Equal("+8618888888888", phoneNumber.UniversalNumber())
@@ -46,17 +45,27 @@ func TestPhoneNumber_IDDCode(t *testing.T) {
 			},
 			want: 86,
 		},
+		{
+			name: "empty",
+			fields: fields{
+				number:  18888888888,
+				iddCode: "",
+			},
+			want: 0,
+		},
+		{
+			name: "other",
+			fields: fields{
+				number:  18888888888,
+				iddCode: "other",
+			},
+			want: 0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, _ := NewPhoneNumber(tt.fields.number, tt.fields.iddCode)
+			p := NewPhoneNumber(tt.fields.number, tt.fields.iddCode)
 			assert.Equalf(t, tt.want, p.IDDCode(), "IDDCode()")
 		})
 	}
-
-	p, err := NewPhoneNumber(18888888888, "iddcode86")
-	assert.Nil(t, p)
-	assert.NotNil(t, err)
-	assert.Error(t, err)
-	assert.ErrorContains(t, err, "invalid IDDCode")
 }
