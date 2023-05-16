@@ -30,6 +30,8 @@
 
 - [云片](https://www.yunpian.com)
 - [阿里云](https://www.aliyun.com/)
+- [腾讯云 SMS](https://cloud.tencent.com/product/sms)
+
 
 ## 安装
 
@@ -203,6 +205,19 @@ client.Send(18888888888, &OrderPaidMessage{OrderNo: "1234"})
 &yunpian.Gateway{
     ApiKey:    "ApiKey",
     Signature: "【默认签名】", // 内容中无签名时使用
+}
+```
+
+### [腾讯云 SMS](https://cloud.tencent.com/product/sms)
+
+短信内容使用 `Template` + `Data`
+
+```go
+&qcloud.Gateway{
+    SdkAppId:  "",
+    SecretId:  "",
+    SecretKey: "",
+    SignName:  "",
 }
 ```
 
