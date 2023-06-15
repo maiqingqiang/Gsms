@@ -31,6 +31,7 @@
 - [云片](https://www.yunpian.com)
 - [阿里云](https://www.aliyun.com/)
 - [腾讯云 SMS](https://cloud.tencent.com/product/sms)
+- 欢迎PR，或者你提供帮助我来开发~
 
 
 ## 安装
