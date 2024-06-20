@@ -18,3 +18,9 @@ func WithLogger(logger gsms.Logger) Option {
 		dove.logger = logger
 	}
 }
+
+func WithUnmarshal(unmarshal Unmarshal) Option {
+	return func(dove *Dove) {
+		dove.unmarshal = unmarshal
+	}
+}
